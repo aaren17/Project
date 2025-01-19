@@ -5,12 +5,14 @@ app = Flask(__name__)
 
 # YouTube Live URL
 YOUTUBE_URL = "https://youtu.be/3LXQWU67Ufk"
+COOKIES_FILE = "cookies.txt"  # Path to your YouTube cookies file (if required)
 
 def get_youtube_hls_stream(youtube_url):
     """Get the HLS playlist URL from YouTube."""
     ydl_opts = {
         "format": "best",
         "quiet": True,
+        "cookiefile": COOKIES_FILE,  # Add cookies file to handle restricted videos
     }
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
         info = ydl.extract_info(youtube_url, download=False)
@@ -22,8 +24,10 @@ def stream_hls_video():
     try:
         hls_url = get_youtube_hls_stream(YOUTUBE_URL)
         return jsonify({'hls_url': hls_url})
+    except yt_dlp.utils.DownloadError as e:
+        return jsonify({'error': 'Failed to fetch HLS URL. Make sure the video is accessible.', 'details': str(e)}), 500
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'error': 'An unexpected error occurred.', 'details': str(e)}), 500
 
 @app.route('/anomalies')
 def fetch_anomalies():
